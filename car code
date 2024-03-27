@@ -1,0 +1,129 @@
+#include <SoftwareSerial.h>
+SoftwareSerial MySerial(12, 13); // RX | TX
+#define IN1 8 // Direction control for motor A
+#define IN2 9 // Direction control for motor A
+#define IN3 10 // Direction control for motor B
+#define IN4 11
+#define S0 2  //for both color sensors
+#define S1 3  //for both color sensors
+#define S2 4   //for both sensors to read data
+#define S3 5    //for both sensors to read data
+#define OUT_1 6 //Output Pin for first sensor
+#define OUT_2 7 //Output Pin for second sensor
+String sensorLeft, sensorRight, command="";
+
+void setup() {
+    // Setup for sensor 1
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(OUT_1, INPUT);
+  digitalWrite(S0, HIGH); // Set frequency scaling to 100%
+  digitalWrite(S1, HIGH);
+
+  // Setup for sensor 2
+  pinMode(OUT_2, INPUT);
+   pinMode(IN1, OUTPUT);    //control pins for motor
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  Serial.begin(9600);
+  // HC-05 default baud rate is usually 9600
+  MySerial.begin(9600);
+}
+void loop() {
+   command="red";
+   sensorLeft=readColor(1);
+   sensorRight=readColor(2);
+  rotateCar360();
+  while(!sensorLeft.equals("black")&&!sensorRight.equals("black"))
+  {
+   sensorLeft=readColor(1);
+   sensorRight=readColor(2);
+    if(sensorLeft.equals(command)&&sensorRight.equals(command))
+      moveForward();
+    else if(sensorLeft.equals(command)&&(!sensorRight.equals(command)))
+        rotateLeft();
+    else if(sensorRight.equals(command)&&(!sensorLeft.equals(command)))
+        rotateRight();
+  }
+  command="";
+
+}
+
+
+void rotateCar360() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  if(sensorLeft.equals(command)&&sensorRight.equals(command))
+  { 
+    StopCar();
+    exit(0);
+  }
+ 
+   
+}
+void StopCar(){
+  digitalWrite(IN1,LOW);
+  digitalWrite(IN2,LOW);
+  digitalWrite(IN3,LOW);
+  digitalWrite(IN4,LOW);
+
+}
+void moveForward() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+void rotateLeft()
+{
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+void rotateRight()
+{
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+String readColor(int sensor) {
+  int red1 = 0,red2=0, green1 = 0,green2=0, blue1 = 0,blue2=0 , BLACK_THRESHOLD=100;
+    digitalWrite(S2, LOW);
+    digitalWrite(S3, LOW);
+    red1= pulseIn(OUT_1, LOW);
+    red2 = pulseIn(OUT_2, LOW);
+    Serial.print(red1 , red2);
+    // Reading green color
+    digitalWrite(S2, HIGH);
+    digitalWrite(S3, HIGH);
+    green1 = pulseIn(OUT_1, LOW);
+    green2 = pulseIn(OUT_2, LOW);
+    Serial.print(green1 , green2);
+    // Reading blue color
+    digitalWrite(S2, LOW);
+    digitalWrite(S3, HIGH);
+    blue1 = pulseIn(OUT_1, LOW);
+    blue2 = pulseIn(OUT_2, LOW);  
+    Serial.print(blue1 , blue2);
+ // Simple color classification based on the highest value
+ if ((red1 >25 && green1 > 35 && blue1 > 20 && sensor==1)||(red2 > 20 && green2 > 30 && blue2 > 25 && sensor==2)){
+    return "Black";
+  }
+  else if ((red1 < 7  && green1 < 7 && blue1 < 7 && sensor==1)||(red2 <7 && green2 <7  && blue2 < 7  && sensor==2)){
+    return "White";
+  }
+  else if((red1 < green1 && red1 < blue1 && sensor==1)||(red2<green2 && red2<blue2 && sensor==2)) {
+    return "red";
+  } else if((green1 < red1&& green1 < blue1 && sensor==1)||(green2 < red2 && green2 < blue2 && sensor==2)) {
+    return "green";
+  } else if((blue1 < red1 && blue1 < green1 && sensor==1)||(blue2 < red2 && blue2 < green2 && sensor==2)) {
+    return "blue";
+  }
+}
